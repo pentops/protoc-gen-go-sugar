@@ -7,7 +7,7 @@ Extends the default protoc-gen-go with some sugar shortcuts.
 Short Enum
 ----------
 
-Proto enum values must be uniquely named in each namespace, however the Go gode adds an extra prefix,
+Proto enum values must be uniquely named in each namespace, however the Go code adds an extra prefix,
 so that:
 
 ```
@@ -44,4 +44,4 @@ that OneOf values are of the correct type. The developers continue to argue abou
 fixing that implementation but believe that it's a bad setup, as oneOf is 'just validation'.
 This would be fine, but it's not how they built it, so look...
 
-Anyway, this extension just copies the isFoo to IsFoo so that you can use that type elsewhere.
+Anyway, this extension just copies `isFoo` to `IsFoo` so that you can use that type elsewhere.
