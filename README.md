@@ -17,7 +17,7 @@ enum foo {
 }
 ```
 
-befomes `package.Foo_FOO_A`
+becomes `package.Foo_FOO_A`
 
 With this enum extension:
 
@@ -31,7 +31,7 @@ When the parameter `sql_driver` is true, an additional set of methods make the E
 
 
 - `Value()` method returns the ShortString() (Short string as SQL enums are already namespaced)
-- ``Scan(interface{})` method decodes as flexibly as it can, using either string representation.
+- `Scan(interface{})` method decodes as flexibly as it can, using either string representation.
 
 This only works when the first value has the `_UNSPECIFIED` suffix, which indicates the Buf naming standard has been used. (a future version could be more flexible)
 
