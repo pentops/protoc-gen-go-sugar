@@ -60,7 +60,12 @@ func generateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 
 func genMessage(g *protogen.GeneratedFile, message *protogen.Message) {
 	for _, oneof := range message.Oneofs {
-		g.P("type Is", message.GoIdent.GoName, "_", oneof.GoName, " = is", message.GoIdent.GoName, "_", oneof.GoName)
+		// proto3 optional fields create synthetic oneofs, which should be skipped here
+		// https://github.com/protocolbuffers/protobuf/blob/v22.0/src/google/protobuf/descriptor.proto#L219
+
+		if !oneof.Desc.IsSynthetic() {
+			g.P("type Is", message.GoIdent.GoName, "_", oneof.GoName, " = is", message.GoIdent.GoName, "_", oneof.GoName)
+		}
 	}
 
 	for _, subMessage := range message.Messages {
