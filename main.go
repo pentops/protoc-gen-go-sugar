@@ -58,7 +58,104 @@ func generateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 	return g
 }
 
+func isOneofWrapper(message *protogen.Message) bool {
+	// special case
+	if len(message.Oneofs) != 1 {
+		return false
+	}
+
+	if !strings.HasSuffix(message.GoIdent.GoName, "Type") {
+		return false
+	}
+
+	messageFullName := message.Desc.FullName()
+	unique := make(map[string]struct{})
+
+	oneofName := message.Oneofs[0].GoName
+	if oneofName != "Type" {
+		return false
+	}
+	for _, field := range message.Fields {
+		if field.Message == nil {
+			// All oneof fields must be a message
+			return false
+		}
+		if field.Message.Desc.Parent().FullName() != messageFullName {
+			// All oneof fields must be a message within the oneof wrapper
+			return false
+		}
+		if _, ok := unique[field.Message.GoIdent.GoName]; ok {
+			// All oneof fields must be unique
+			return false
+		}
+		unique[field.Message.GoIdent.GoName] = struct{}{}
+
+		if field.Oneof == nil || field.Oneof.GoName != oneofName {
+			return false
+		}
+	}
+
+	return true
+}
+
 func genMessage(g *protogen.GeneratedFile, message *protogen.Message) {
+
+	if isOneofWrapper(message) {
+		g.P("//"+message.GoIdent.GoName, " is a oneof wrapper")
+		prefix := strings.TrimSuffix(message.GoIdent.GoName, "Type")
+
+		typeKeyName := prefix + "TypeKey"
+		isATypeName := "Is" + message.GoIdent.GoName + "WrappedType"
+		g.P("type ", typeKeyName, " string")
+		g.P("const (")
+		for _, field := range message.Fields {
+			g.P(prefix, "_", field.GoName, " ", typeKeyName, ` = "`, field.Desc.JSONName(), `"`)
+		}
+		g.P(")") // end const
+
+		g.P("func (x *", message.GoIdent, ") TypeKey() (", typeKeyName, ", bool) {")
+		g.P("	switch x.Type.(type) {")
+		for _, field := range message.Fields {
+			g.P("	case *", field.GoIdent, ":")
+			g.P("		return ", prefix, "_", field.GoName, ", true")
+		}
+		g.P("	default:")
+		g.P("		return \"\", false")
+		g.P("	}")
+		g.P("}")
+
+		g.P("type ", isATypeName, " interface {")
+		g.P("	TypeKey() ", typeKeyName)
+		g.P("}")
+
+		g.P("func (x *", message.GoIdent, ") Set(val ", isATypeName, ") {")
+		g.P("	switch v := val.(type) {")
+		for _, field := range message.Fields {
+			g.P("	case *", field.Message.GoIdent, ":")
+			g.P("		x.Type = &", field.GoIdent, "{", field.GoName, ": v}")
+		}
+		g.P("	}")
+		g.P("}")
+
+		g.P("func (x *", message.GoIdent, ") Get() ", isATypeName, " {")
+		g.P("	switch v := x.Type.(type) {")
+		for _, field := range message.Fields {
+			g.P("	case *", field.GoIdent, ":")
+			g.P("		return v.", field.GoName)
+		}
+		g.P("	default:")
+		g.P("		return nil")
+		g.P("	}")
+		g.P("}")
+
+		for _, field := range message.Fields {
+			g.P("func (x *", field.Message.GoIdent, ") TypeKey() ", typeKeyName, "  {")
+			g.P("		return ", prefix, "_", field.GoName)
+			g.P("}")
+		}
+
+	}
+
 	for _, oneof := range message.Oneofs {
 		// proto3 optional fields create synthetic oneofs, which should be skipped here
 		// https://github.com/protocolbuffers/protobuf/blob/v22.0/src/google/protobuf/descriptor.proto#L219
