@@ -52,7 +52,7 @@ func generateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 	}
 
 	for _, enum := range file.Enums {
-		genEnum(gen, file, g, enum)
+		genEnum(g, enum)
 	}
 
 	return g
@@ -170,7 +170,7 @@ func genMessage(g *protogen.GeneratedFile, message *protogen.Message) {
 	}
 }
 
-func genEnum(gen *protogen.Plugin, file *protogen.File, g *protogen.GeneratedFile, enum *protogen.Enum) {
+func genEnum(g *protogen.GeneratedFile, enum *protogen.Enum) {
 	g.P("//" + enum.GoIdent.GoName)
 
 	if len(enum.Values) == 0 {
