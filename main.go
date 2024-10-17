@@ -98,6 +98,8 @@ func isOneofWrapper(message *protogen.Message) bool {
 	return true
 }
 
+var protoPackage = protogen.GoImportPath("google.golang.org/protobuf/proto")
+
 func genMessage(g *protogen.GeneratedFile, message *protogen.Message) {
 
 	if isOneofWrapper(message) {
@@ -126,6 +128,7 @@ func genMessage(g *protogen.GeneratedFile, message *protogen.Message) {
 
 		g.P("type ", isATypeName, " interface {")
 		g.P("	TypeKey() ", typeKeyName)
+		g.P("   ", protoPackage.Ident("Message"))
 		g.P("}")
 
 		g.P("func (x *", message.GoIdent, ") Set(val ", isATypeName, ") {")
